@@ -55,6 +55,29 @@ if API_KEY:
     app.add_middleware(_AuthMiddleware)
 
 
+# ---- CORS (frontend on Vercel, backend on a different domain) ----------------
+import os as _os
+from fastapi.middleware.cors import CORSMiddleware
+
+_origins_raw = _os.getenv(
+    "ALLOWED_ORIGINS",
+    "https://krushnasindhu.vercel.app,http://localhost:5173,http://localhost:8000")
+_origins = [o.strip() for o in _origins_raw.split(",") if o.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"] if "*" in _origins else _origins,
+    allow_origin_regex=None if "*" in _origins else r"https://.*\.vercel\.app",
+    allow_credentials="*" not in _origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/healthz")
+async def healthz():
+    return {"ok": True}
+
+
 
 # ---- status ------------------------------------------------------------------
 @app.get("/api/status")
