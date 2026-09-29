@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as maplibregl from 'maplibre-gl'
+import { gulfFleetFC } from '../data/gulfFleet.js'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 
@@ -139,6 +140,8 @@ function ringCentroid(ring) {
 function buildStyle(bm) {
   return {
     version: 8,
+    // glyphs for symbol text layers (ship-name labels)
+    glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
     projection: { type: 'globe' },
     sky: SKY,
     sources: {
@@ -165,7 +168,7 @@ function addOverlays(map) {
     if (!map.getSource(id)) map.addSource(id, { type: 'geojson', data: EMPTY })
   }
   ;['s-risk', 's-slicks', 's-vessels', 's-cone', 's-footprint',
-    's-back', 's-fwd', 's-track', 's-track-start', 's-suspects', 's-corridor'].forEach(src)
+    's-back', 's-fwd', 's-track', 's-track-start', 's-suspects', 's-corridor', 's-gulf'].forEach(src)
 
   const layer = (def) => {
     if (!map.getLayer(def.id)) map.addLayer(def)
@@ -258,6 +261,36 @@ function addOverlays(map) {
     },
   })
 
+  // 50-ship Gulf fleet: small neutral dots + name labels (demo ambience)
+  layer({
+    id: 'gulf-ships', type: 'circle', source: 's-gulf',
+    layout: { 'visibility': 'none' },
+    paint: {
+      'circle-radius': 4,
+      'circle-color': '#9AE6DF',
+      'circle-opacity': 0.85,
+      'circle-stroke-width': 1,
+      'circle-stroke-color': '#0B1326',
+    },
+  })
+  layer({
+    id: 'gulf-ship-labels', type: 'symbol', source: 's-gulf',
+    layout: {
+      'visibility': 'none',
+      'text-field': ['get', 'name'],
+      'text-font': ['Noto Sans Regular'],
+      'text-size': 10,
+      'text-offset': [0, 1.2],
+      'text-anchor': 'top',
+    },
+    paint: {
+      'text-color': '#DAE2FD',
+      'text-halo-color': '#05080A',
+      'text-halo-width': 1.2,
+    },
+    minzoom: 7.5,
+  })
+
   // Corridor layer - time-sliced backtrack polygons with hours_prior opacity
   layer({
     id: 'corridor-fill', type: 'fill', source: 's-corridor',
@@ -303,17 +336,31 @@ function createFlowParticle(center, type, idx) {
     lat,
     length,
     progress: Math.random(), // 0-1 along the flow direction
+    // curvature seed: each particle follows a slightly different arc, producing
+    // swept schematic streamlines instead of straight darts
+    curve: (Math.random() - 0.5) * 1.6,
+    heading: null,
+    trail: [],
   }
 }
 
 function stepFlowParticle(p, config, bbox) {
-  const dirRad = (config[p.type].direction * Math.PI) / 180
+  const baseDir = (config[p.type].direction * Math.PI) / 180
+  if (p.heading == null) p.heading = baseDir
+  // ease heading back toward the base flow so curves stay coherent, while the
+  // per-particle `curve` bias bends each path into an arc
+  p.heading += p.curve * 0.06
+  p.heading += (baseDir - p.heading) * 0.03
   const speed = config[p.type].speed
-  const dx = Math.cos(dirRad) * speed
-  const dy = Math.sin(dirRad) * speed
+  const dx = Math.cos(p.heading) * speed
+  const dy = Math.sin(p.heading) * speed
 
   p.lon += dx
   p.lat += dy
+
+  // short trail so each stroke reads as a swept curve
+  p.trail.push([p.lon, p.lat])
+  if (p.trail.length > 14) p.trail.shift()
 
   // Wrap if outside bbox
   if (p.lon < bbox.minLng || p.lon > bbox.maxLng || p.lat < bbox.minLat || p.lat > bbox.maxLat) {
@@ -330,21 +377,35 @@ function stepFlowParticle(p, config, bbox) {
         p.lat = bbox.minLat + 0.02
         break
     }
+    p.trail = []
+    p.heading = null
   }
   return p
 }
 
 function particleToFeature(p, config) {
-  const dirRad = (config[p.type].direction * Math.PI) / 180
-  const dx = Math.cos(dirRad) * p.length
-  const dy = Math.sin(dirRad) * p.length * 0.7 // latitude flattening
+  // Draw the particle's recent path as a smooth curved stroke: the trail is the
+  // actual swept arc (heading rotates per step), so lines bow like schematic
+  // flow imagery. Fallback stub while the trail warms up.
+  let coords
+  if (p.trail && p.trail.length > 2) {
+    coords = [...p.trail, [p.lon, p.lat]]
+  } else {
+    const baseDir = (config[p.type].direction * Math.PI) / 180
+    const dx = Math.cos(baseDir) * p.length
+    const dy = Math.sin(baseDir) * p.length * 0.7
+    coords = [[p.lon, p.lat], [p.lon + dx, p.lat + dy]]
+  }
+  const warm = Math.min((p.trail?.length || 0) / 14, 1)
   return {
     type: 'Feature',
-    properties: { type: p.type, color: config[p.type].color, width: config[p.type].width },
-    geometry: {
-      type: 'LineString',
-      coordinates: [[p.lon, p.lat], [p.lon + dx, p.lat + dy]],
+    properties: {
+      type: p.type,
+      color: config[p.type].color,
+      width: config[p.type].width,
+      opacity: 0.15 + 0.55 * warm,
     },
+    geometry: { type: 'LineString', coordinates: coords },
   }
 }
 
@@ -357,11 +418,15 @@ function initFlowSourceAndLayers(map) {
       id: 'flow-lines',
       type: 'line',
       source: 's-flow',
+      layout: {
+        'line-cap': 'round',
+        'line-join': 'round',
+      },
       paint: {
         'line-color': ['get', 'color'],
         'line-width': ['get', 'width'],
-        'line-opacity': 0.7,
-        'line-blur': 0.5,
+        'line-opacity': ['get', 'opacity'],
+        'line-blur': 0.4,
       },
     })
   }
@@ -681,6 +746,12 @@ export default function MapView({
     mapRef.current = map
     window.__map = map
 
+    // one-shot source writer for click handlers inside this effect scope
+    const setSrc2 = (id, data) => {
+      const s = map.getSource(id)
+      if (s) s.setData({ type: 'FeatureCollection', features: [data] })
+    }
+
     // Zoom, compass (drag to rotate) and a pitch indicator for the 3D camera.
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right')
     map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left')
@@ -691,7 +762,8 @@ export default function MapView({
     })
     popupRef.current = popup
 
-    map.on('load', () => {
+    const onReady = () => {
+      if (readyRef.current) return
       readyRef.current = true
       try {
         map.setProjection({ type: projRef.current === 'flat' ? 'mercator' : 'globe' })
@@ -705,7 +777,11 @@ export default function MapView({
         pendingFocusRef.current()
         pendingFocusRef.current = null
       }
-    })
+    }
+    map.on('load', onReady)
+    // v6 guard: 'load' can be missed when the style finishes before handlers
+    // attach; 'idle' fires after the first full render either way.
+    map.once('idle', onReady)
 
     map.on('error', (e) => {
       // Tile 404s are routine at the edges of a service's zoom range.
@@ -719,6 +795,7 @@ export default function MapView({
       ['slick-fill', (p) => `Slick #${escapeHtml(p.id)} · ${escapeHtml(p.area_km2)} km²`],
       ['risk-fill', (p) => `Spill risk ${(Number(p.p) * 100).toFixed(0)}%`],
       ['suspects', (p) => `${escapeHtml(p.vessel_name || `MMSI ${p.mmsi}`)} · Score: ${p.total_score}% · ${p.suspicion_level}`],
+      ['gulf-ships', (p) => `${escapeHtml(p.name)} · ${escapeHtml(p.type || 'OSV')} · ${Math.round(p.sog ?? 0)} kn`],
     ]
     HOVER.forEach(([id, fmt]) => {
       map.on('mousemove', id, (e) => {
@@ -742,12 +819,26 @@ export default function MapView({
       if (p) cbRef.current.onSelectSlick(p.id)
     }
     const onSuspectClick = (e) => {
-      const p = e.features?.[0]?.properties
+      const f = e.features?.[0]
+      const p = f?.properties
       if (p) {
+        // geometry (not properties) carries the coordinates
+        const c = f.geometry?.coordinates
+        const lon = p.lon || p.longitude || c?.[0]
+        const lat = p.lat || p.latitude || c?.[1]
         // Dispatch fly-to event for suspect vessel
-        window.dispatchEvent(new CustomEvent('fly-to', {
-          detail: { lon: p.lon || p.longitude || p.coordinates?.[0], lat: p.lat || p.latitude || p.coordinates?.[1] }
-        }))
+        if (lon != null && lat != null) {
+          window.dispatchEvent(new CustomEvent('fly-to', { detail: { lon, lat } }))
+          // Drop a visible placemarker at the suspect so the click has an
+          // unmistakable on-map result
+          setSrc2('s-track-start', {
+            type: 'Feature',
+            properties: {},
+            geometry: { type: 'Point', coordinates: [lon, lat] },
+          })
+          clearLabels()
+          addLabel(map, [lon, lat + 0.05], `Suspect: ${p.vessel_name || `MMSI ${p.mmsi}`}`, 'top')
+        }
         // Also select the vessel if MMSI available
         if (p.mmsi) cbRef.current.onSelectVessel(p.mmsi)
       }
@@ -755,6 +846,20 @@ export default function MapView({
     map.on('click', 'vessels', onVesselClick)
     map.on('click', 'slick-fill', onSlickClick)
     map.on('click', 'suspects', onSuspectClick)
+    map.on('click', 'gulf-ships', (e) => {
+      const f = e.features?.[0]
+      const p = f?.properties
+      const c = f?.geometry?.coordinates
+      if (p && c) {
+        setSrc2('s-track-start', {
+          type: 'Feature', properties: {},
+          geometry: { type: 'Point', coordinates: c },
+        })
+        clearLabels()
+        addLabel(map, [c[0], c[1] + 0.05], `Suspect: ${p.name}`, 'top')
+        window.dispatchEvent(new CustomEvent('fly-to', { detail: { lon: c[0], lat: c[1] } }))
+      }
+    })
 
     // --- coordinate readout -------------------------------------------------
     const strip = document.getElementById('coord-strip')
@@ -936,6 +1041,13 @@ export default function MapView({
   }, [flowOn, flowOrigin])
 
   // --- Corridor time-slice animation -----------------------------------------
+  // Reset playback position whenever a new demo scenario arrives so the
+  // backtrack animation always replays from 0h.
+  useEffect(() => {
+    setCorridorHours(0)
+    setIsPlaying(false)
+  }, [demoCorridor])
+
   useEffect(() => {
     const map = mapRef.current
     if (!map || !readyRef.current) return
@@ -1025,6 +1137,34 @@ export default function MapView({
       src.setData(EMPTY)
     }
   }, [demoSuspects])
+
+  // --- Gulf fleet ambience layer: 50 named ships during the demo ------------
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !readyRef.current) return
+    const src = map.getSource('s-gulf')
+    if (!src) return
+    const demoActive = demoStage !== 'idle' && demoStage !== 'processing'
+    src.setData(demoActive ? gulfFleetFC() : EMPTY)
+    const vis = demoActive ? 'visible' : 'none'
+    for (const id of ['gulf-ships', 'gulf-ship-labels']) {
+      if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis)
+    }
+    if (demoStage === 'idle' || demoStage === 'processing') {
+      // clear any stale suspect placemarker from a previous run
+      const ts = map.getSource('s-track-start')
+      if (ts) ts.setData(EMPTY)
+    }
+  }, [demoStage, demoSuspects])
+
+  // Auto-start the backtrack playback when the demo reaches that stage
+  useEffect(() => {
+    if (demoStage === 'backtrack' && !isPlaying) setIsPlaying(true)
+    if ((demoStage === 'idle' || demoStage === 'processing') && isPlaying) {
+      setIsPlaying(false)
+      setCorridorHours(0)
+    }
+  }, [demoStage])  // eslint-disable-line react-hooks/exhaustive-deps
 
   // Playback animation
   useEffect(() => {

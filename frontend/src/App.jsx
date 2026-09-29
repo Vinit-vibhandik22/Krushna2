@@ -1,17 +1,40 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
-import { getJSON, postJSON } from './api.js'
+import { getJSON, postJSON, wsUrl, EP } from './api.js'
 import Header from './components/Header.jsx'
 import MapView, { BASEMAPS } from './components/MapView.jsx'
 import LeftPanel from './components/LeftPanel.jsx'
 import SlickDetail from './components/SlickDetail.jsx'
 import VesselCard from './components/VesselCard.jsx'
 import LoginPage from './components/LoginPage.jsx'
+import ProcessingOverlay from './components/ProcessingOverlay.jsx'
 import TelemetryStatusBar from './components/TelemetryStatusBar.jsx'
-import { loadDemoData } from './data/demoData.js'
 
 // Demo pacing (ms). Tune PROCESSING_MS for the fake pipeline illusion.
 const PROCESSING_MS = 11000  // ~10-13s processing timer
 const STAGE_GAP_MS = 3000    // gap between each visible stage
+
+// Demo scenario: real exported pipeline artifacts (time-sliced backtrack
+// corridor enables the per-second reverse animation). Falls back to the
+// static dataset if the files are missing.
+async function loadDemoData() {
+  const base = `${import.meta.env.BASE_URL}demo/`
+  try {
+    const [det, cor, ori, sus] = await Promise.all([
+      fetch(`${base}detection.geojson`).then((r) => r.json()),
+      fetch(`${base}corridor.geojson`).then((r) => r.json()),
+      fetch(`${base}origin.json`).then((r) => r.json()),
+      fetch(`${base}suspects.geojson`).then((r) => r.json()),
+    ])
+    if (det?.features?.length && cor?.features?.length && ori?.estimated_origin && sus?.features?.length) {
+      // Hoist estimated_origin fields (primary_centroid, time_window_utc, …)
+      // to top level — that's the shape MapView expects for the origin marker.
+      const origin = { ...ori, ...ori.estimated_origin }
+      return { detection: det, corridor: cor, origin, suspects: sus }
+    }
+  } catch { /* fall through to static data */ }
+  const { loadDemoData: loadStatic } = await import('./data/demoData.js')
+  return loadStatic()
+}
 
 export default function App() {
   const [theme, setTheme] = useState(() => {
@@ -79,16 +102,16 @@ export default function App() {
 
   const refreshAll = useCallback(async () => {
     try {
-      const st = await getJSON('/api/status')
+      const st = await getJSON(EP.status)
       setStatus(st)
       // When status check succeeds, clear any persistent backend error toast
       setToast((prev) => (prev && prev.includes('Backend unreachable') ? null : prev))
 
       const [v, sc, sl, ev] = await Promise.all([
-        getJSON('/api/vessels/live').catch(() => null),
-        getJSON('/api/scenes').catch(() => []),
-        getJSON('/api/slicks').catch(() => []),
-        getJSON('/api/events?limit=60').catch(() => []),
+        getJSON(EP.vesselsLive).catch(() => null),
+        getJSON(EP.scenes).catch(() => []),
+        getJSON(EP.slicks).catch(() => []),
+        getJSON(`${EP.events}?limit=60`).catch(() => []),
       ])
       if (v) setVessels(v)
       if (sc) setScenes(sc)
@@ -96,7 +119,7 @@ export default function App() {
       if (ev) setEvents(ev)
 
       if (!riskStatusRef.current) {
-        getJSON('/api/risk/status')
+        getJSON(EP.riskStatus)
           .then((rs) => { riskStatusRef.current = rs })
           .catch(() => {})
       }
@@ -109,7 +132,7 @@ export default function App() {
     setRiskOn((prev) => {
       const next = !prev
       if (next && !riskData) {
-        getJSON('/api/risk/grid?min_p=0.05')
+        getJSON(EP.riskGrid(0.05))
           .then(setRiskData)
           .catch(() => {
             showToast('Risk analytics not initialized — run scripts/train_risk_model.py')
@@ -138,7 +161,7 @@ export default function App() {
 
     const connect = () => {
       const proto = location.protocol === 'https:' ? 'wss' : 'ws'
-      ws = new WebSocket(`${proto}://${location.host}/ws`)
+      ws = new WebSocket(wsUrl('/ws'))
 
       ws.onopen = () => {
         reconnectDelay = 1000
@@ -162,7 +185,7 @@ export default function App() {
         } else if (msg.type === 'analysis_complete') {
           refreshAll()
           if (slickRef.current === msg.slick_id && detailRef.current !== null) {
-            getJSON(`/api/slicks/${msg.slick_id}`).then(setDetail)
+            getJSON(EP.slickDetail(msg.slick_id)).then(setDetail)
           }
         }
       }
@@ -195,7 +218,7 @@ export default function App() {
     setSelectedSlickId(id)
     setRightPanelOpen(true)
     try {
-      const d = await getJSON(`/api/slicks/${id}`)
+      const d = await getJSON(EP.slickDetail(id))
       setDetail(d)
       // Set flow origin to slick centroid (fallback to geometry centroid)
       if (d?.centroid_lon != null) {
@@ -217,7 +240,7 @@ export default function App() {
   const scanScene = useCallback(async (pid, name) => {
     showToast(`Downloading + scanning ${name || pid.slice(0, 10)}…`)
     try {
-      const r = await postJSON(`/api/scenes/${pid}/scan`)
+      const r = await postJSON(EP.scanScene(pid))
       showToast(r.slick_ids?.length
         ? `Scan complete — ${r.slick_ids.length} oil-candidate patch(es)`
         : 'Scan complete — sea clear')
@@ -228,7 +251,7 @@ export default function App() {
   const reanalyze = useCallback(async (id) => {
     showToast('Hindcast + attribution running…')
     try {
-      await postJSON(`/api/slicks/${id}/analyze`)
+      await postJSON(EP.analyzeSlick(id))
       await openSlick(id)
       showToast('Analysis complete')
     } catch (e) { showToast(e.message) }
@@ -239,10 +262,10 @@ export default function App() {
     setVesselDetails(null)
     if (!mmsi) return
     setRightPanelOpen(true)
-    getJSON(`/api/vessels/${mmsi}/details`)
+    getJSON(EP.vesselDetails(mmsi))
       .then(setVesselDetails)
       .catch(() => {})
-    getJSON(`/api/vessels/${mmsi}/track?hours=18`)
+    getJSON(EP.track(mmsi, 18))
       .then((tr) => window.dispatchEvent(
         new CustomEvent('vessel-track', { detail: tr })))
       .catch(() => {})
@@ -266,24 +289,27 @@ export default function App() {
 
     // Fake pipeline processing, then reveal the detection
     setTimeout(() => {
-      const data = loadDemoData()
-      setDemoData(data)
-      setDemoStage('detected')
+      loadDemoData().then((data) => {
+        setDemoData(data)
+        setDemoStage('detected')
 
-      // Sequential stage beats, each STAGE_GAP_MS after the previous one
-      setTimeout(() => {
-        setFlowOn(true)
-        setDemoStage('flow')
-        const ring = data.detection?.geometry?.coordinates?.[0]
-        if (ring?.length) {
-          const sum = ring.reduce((a, c) => [a[0] + c[0], a[1] + c[1]], [0, 0])
-          setFlowOrigin({ lon: sum[0] / ring.length, lat: sum[1] / ring.length, orientation_deg: null })
-        }
-      }, STAGE_GAP_MS)
+        // Sequential stage beats, each STAGE_GAP_MS after the previous one
+        setTimeout(() => {
+          setFlowOn(true)
+          setDemoStage('flow')
+          // Works for both a bare Feature (static data) and a FeatureCollection
+          const detFeat = data.detection?.features?.[0] ?? data.detection
+          const ring = detFeat?.geometry?.coordinates?.[0]
+          if (ring?.length) {
+            const sum = ring.reduce((a, c) => [a[0] + c[0], a[1] + c[1]], [0, 0])
+            setFlowOrigin({ lon: sum[0] / ring.length, lat: sum[1] / ring.length, orientation_deg: null })
+          }
+        }, STAGE_GAP_MS)
 
-      setTimeout(() => setDemoStage('forecast'), STAGE_GAP_MS * 2)
-      setTimeout(() => setDemoStage('backtrack'), STAGE_GAP_MS * 3)
-      setTimeout(() => setDemoStage('suspects'), STAGE_GAP_MS * 4)
+        setTimeout(() => setDemoStage('forecast'), STAGE_GAP_MS * 2)
+        setTimeout(() => setDemoStage('backtrack'), STAGE_GAP_MS * 3)
+        setTimeout(() => setDemoStage('suspects'), STAGE_GAP_MS * 4)
+      }).catch(() => setDemoStage('idle'))
     }, PROCESSING_MS)
   }, [])
 
@@ -304,6 +330,9 @@ export default function App() {
 
   return (
     <div className="app-hud" data-theme={theme}>
+      {/* Pipeline processing illusion */}
+      {demoStage === 'processing' && <ProcessingOverlay durationMs={PROCESSING_MS} />}
+
       {/* 1. Full Screen Map Base Layer */}
       <div className="map-background">
         <MapView

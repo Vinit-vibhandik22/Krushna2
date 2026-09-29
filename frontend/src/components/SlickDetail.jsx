@@ -88,7 +88,7 @@ export default function SlickDetail({
   const locateAtRelease = (s) => {
     const rel = bw?.release_time || bw?.release_ts
     const qs = rel ? `from_ts=${rel - 3 * 3600}&to_ts=${rel + 3 * 3600}` : ''
-    getJSON(`/api/vessels/${s.mmsi}/track?${qs}`)
+    getJSON(`${EP.track(s.mmsi)}&${qs}`)
       .then((tr) => {
         if (!tr.points?.length) {
           onSelectVessel(s.mmsi)
