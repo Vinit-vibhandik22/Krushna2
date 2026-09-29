@@ -1144,13 +1144,13 @@ export default function MapView({
     if (!map || !readyRef.current) return
     const src = map.getSource('s-gulf')
     if (!src) return
-    const demoActive = demoStage !== 'idle' && demoStage !== 'processing'
+    const demoActive = demoStage !== 'idle' && demoStage !== 'processing' && demoStage !== 'awaiting-upload'
     src.setData(demoActive ? gulfFleetFC() : EMPTY)
     const vis = demoActive ? 'visible' : 'none'
     for (const id of ['gulf-ships', 'gulf-ship-labels']) {
       if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis)
     }
-    if (demoStage === 'idle' || demoStage === 'processing') {
+    if (demoStage === 'idle' || demoStage === 'processing' || demoStage === 'awaiting-upload') {
       // clear any stale suspect placemarker from a previous run
       const ts = map.getSource('s-track-start')
       if (ts) ts.setData(EMPTY)

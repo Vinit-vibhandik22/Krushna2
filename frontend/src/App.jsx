@@ -7,6 +7,7 @@ import SlickDetail from './components/SlickDetail.jsx'
 import VesselCard from './components/VesselCard.jsx'
 import LoginPage from './components/LoginPage.jsx'
 import ProcessingOverlay from './components/ProcessingOverlay.jsx'
+import SarIngestModal from './components/SarIngestModal.jsx'
 import TelemetryStatusBar from './components/TelemetryStatusBar.jsx'
 
 // Demo pacing (ms). Tune PROCESSING_MS for the fake pipeline illusion.
@@ -289,12 +290,16 @@ export default function App() {
 
   // Demo flow handlers
   const handleOpenDemo = useCallback(() => {
-    // Reset and start demo
+    // Reset state and ask the operator to "upload" SAR scenes first
     setDemoData(null)
     setFlowOn(false)
+    setDemoStage('awaiting-upload')
+  }, [])
+
+  // Fake pipeline processing, then reveal the detection (after SAR ingest)
+  const startDemoPipeline = useCallback(() => {
     setDemoStage('processing')
 
-    // Fake pipeline processing, then reveal the detection
     setTimeout(() => {
       loadDemoData().then((data) => {
         setDemoData(data)
@@ -337,7 +342,13 @@ export default function App() {
 
   return (
     <div className="app-hud" data-theme={theme}>
-      {/* Pipeline processing illusion */}
+      {/* SAR scene ingest gate + pipeline processing illusion */}
+      {demoStage === 'awaiting-upload' && (
+        <SarIngestModal
+          onCancel={() => setDemoStage('idle')}
+          onIngest={startDemoPipeline}
+        />
+      )}
       {demoStage === 'processing' && <ProcessingOverlay durationMs={PROCESSING_MS} />}
 
       {/* 1. Full Screen Map Base Layer */}
