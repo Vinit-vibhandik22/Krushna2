@@ -138,7 +138,9 @@ export default function App() {
 
     const connect = () => {
       const base = import.meta.env.VITE_WS_URL
-        || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`
+        || (import.meta.env.PROD
+            ? 'wss://krushna2-production.up.railway.app'
+            : `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`)
       ws = new WebSocket(`${base}/ws`)
 
       ws.onopen = () => {
