@@ -137,8 +137,9 @@ export default function App() {
     let closed = false
 
     const connect = () => {
-      const proto = location.protocol === 'https:' ? 'wss' : 'ws'
-      ws = new WebSocket(`${proto}://${location.host}/ws`)
+      const base = import.meta.env.VITE_WS_URL
+        || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`
+      ws = new WebSocket(`${base}/ws`)
 
       ws.onopen = () => {
         reconnectDelay = 1000
