@@ -156,7 +156,7 @@
   position: absolute;
   bottom: 84px;
   left: 248px;
-  width: 280px;
+  width: 360px;
   padding: 12px 16px;
   background: rgba(13, 17, 23, 0.95);
   border: 1px solid rgba(245, 158, 11, 0.3);
@@ -184,9 +184,9 @@
 
 .corridor-title {
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.05em;
   color: #F59E0B;
   text-transform: uppercase;
 }

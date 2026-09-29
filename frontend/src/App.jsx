@@ -89,8 +89,15 @@ export default function App() {
   const toastTimerRef = useRef(null)
 
   const showToast = useCallback((m) => {
+    const msg = String(m)
+    // Backend-unreachable notices are suppressed entirely (demo works offline;
+    // live feeds just show WAIT). Log instead of popping a toast.
+    if (msg.includes('Backend unreachable')) {
+      console.warn(msg)
+      return
+    }
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-    setToast(String(m))
+    setToast(msg)
     toastTimerRef.current = setTimeout(() => setToast(null), 6000)
   }, [])
 

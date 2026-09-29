@@ -1256,7 +1256,7 @@ export default function MapView({
       {demoCorridor && (
         <div className={`corridor-controls ${leftPanelOpen ? 'dock-open' : 'dock-closed'}`}>
           <div className="corridor-header">
-            <span className="corridor-title">Backtrack Time</span>
+            <span className="corridor-title">Slide pointer forward to forecast, behind to backtrack</span>
             <span className="corridor-hours mono">{corridorHours.toFixed(0)}h / {corridorMaxHours.current}h</span>
           </div>
           <input
