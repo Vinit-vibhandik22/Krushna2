@@ -47,6 +47,10 @@ class Settings:
     # API authentication (empty = no auth required)
     api_key: str = os.getenv("API_KEY", "")
 
+    # Browser origins allowed to call this API from another origin
+    # (comma-separated; empty = only the same-origin dashboard)
+    cors_origins: str = os.getenv("CORS_ORIGINS", "")
+
     # Scene cache management (limits disk usage from downloaded Sentinel-1 scenes)
     scene_cache_max_gb: float = float(os.getenv("SCENE_CACHE_MAX_GB", "10"))
     scene_ttl_days: int = int(os.getenv("SCENE_TTL_DAYS", "7"))
@@ -65,6 +69,10 @@ class Settings:
     @property
     def sh_configured(self) -> bool:
         return bool(self.sh_client_id and self.sh_client_secret)
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
     def ensure_dirs(self) -> None:
         (self.data_dir / "scenes").mkdir(parents=True, exist_ok=True)

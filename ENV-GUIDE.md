@@ -28,7 +28,8 @@ Two exceptions where a Vercel variable *would* matter:
 | `PARTICLES` | `100` code / `600` example | Lagrangian particle count (higher = slower, smoother) |
 | `DATA_DIR` | `data` | Where scenes/landmask/models live |
 | `DB_PATH` | `data/app.db` | SQLite path |
-| `API_KEY` | empty | If set, all `/api/*` routes require `X-API-Key` |
+| `API_KEY` | empty | If set, all `/api/*` routes require `X-API-Key` — the bundled dashboard doesn't send it, so leave empty unless you add the header to your client |
+| `CORS_ORIGINS` | empty | Comma-separated browser origins allowed to call this API (only needed when the dashboard calls the backend cross-origin; see `DEPLOY.md`) |
 | `SCENE_CACHE_MAX_GB` | `10` | Disk cap before oldest scenes are pruned |
 | `SCENE_TTL_DAYS` | `7` | Scene age limit regardless of status |
 
@@ -62,15 +63,19 @@ PARTICLES=300
 DATA_DIR=data
 DB_PATH=data/app.db
 API_KEY=
+CORS_ORIGINS=
 SCENE_CACHE_MAX_GB=10
 SCENE_TTL_DAYS=7
 ```
 
 ## Platform notes
 
-- **Render/Railway**: also set the start command
-  `uvicorn backend.main:app --host 0.0.0.0 --port $PORT` and add a **persistent
-  disk** mounted at `data/` (SQLite + scene cache don't survive ephemeral filesystems).
+- **Railway**: nothing manual — the repo ships a Dockerfile + `/health`; mount a
+  volume at **`/data`** and set `DB_PATH=/data/app.db` to keep SQLite across
+  redeploys (don't mount over `/app/data`, it hides the trained models). See `DEPLOY.md`.
+- **Render/Fly.io**: set the start command
+  `uvicorn backend.main:app --host 0.0.0.0 --port $PORT` and add a persistent
+  disk mounted so `data/` survives (SQLite + scene cache don't survive ephemeral filesystems).
 - **Frontend on Vercel + backend elsewhere**: the dashboard calls `/api/*`
   relative to its own origin — add a rewrite/proxy from the Vercel domain to
   your backend, or CORS middleware on the backend for the Vercel domain

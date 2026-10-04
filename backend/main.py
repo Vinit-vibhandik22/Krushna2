@@ -55,6 +55,24 @@ if API_KEY:
     app.add_middleware(_AuthMiddleware)
 
 
+# ---- CORS (only when the dashboard is served from another origin) -------------
+if settings.cors_origins_list:
+    from fastapi.middleware.cors import CORSMiddleware
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins_list,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+
+# ---- platform health probe (Railway) ------------------------------------------
+@app.get("/health")
+async def health():
+    return {"ok": True}
+
+
 
 # ---- status ------------------------------------------------------------------
 @app.get("/api/status")
