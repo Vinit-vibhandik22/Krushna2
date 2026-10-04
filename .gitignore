@@ -1,0 +1,50 @@
+# ---- secrets (never commit) ----
+.env
+.env.*
+!.env.example
+
+# ---- runtime data: AIS history, scenes (~GB), datasets ----
+# everything here is regenerable via scripts/ (see README), but models are included
+data/*
+!data/
+!data/unet_model.pt
+!data/risk_model.joblib
+
+# ---- frontend ----
+frontend/node_modules/
+frontend/dist/
+
+# ---- python ----
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.venv/
+venv/
+
+# ---- local tooling ----
+.claude/
+
+# ---- IDE / editor ----
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ---- OS noise ----
+Thumbs.db
+Desktop.ini
+.DS_Store
+~$*
+*.tmp
+*.log
+
+# ---- large datasets (regenerable) ----
+*.SAFE/
+*.safe/
+scratch/
+b a c k e n d / s t o r e . d b  

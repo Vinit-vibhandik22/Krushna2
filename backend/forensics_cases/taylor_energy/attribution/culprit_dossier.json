@@ -1,0 +1,392 @@
+{
+  "report_metadata": {
+    "generated_at_utc": "2026-09-28T08:46:52.789402Z",
+    "observation_timestamp_utc": "2023-11-17T23:54:16+00:00",
+    "calculated_drift_age_hours": 0.5,
+    "spill_origin_centroid": {
+      "latitude": 28.935369,
+      "longitude": -88.967804
+    },
+    "release_window_utc": {
+      "start": "2023-11-17T23:16:46+00:00",
+      "end": "2023-11-17T23:31:46+00:00",
+      "duration_hours": 0.25
+    }
+  },
+  "forensic_verdict": {
+    "primary_verdict": "SUSPECTED_ANCHOR_STRIKE_ON_PIPELINE",
+    "confidence_level": "HIGH",
+    "executive_summary": "Vessel CG WALNUT (MMSI: 366953000) was observed loitering/anchoring within 119m of Pipeline Segment 12712 operated by WALTER OIL & GAS CORPORATION prior to release.",
+    "nearest_infrastructure": {
+      "type": "subsea_pipeline",
+      "distance_meters": 48.7,
+      "segment_id": 12712,
+      "operator": "WALTER OIL & GAS CORPORATION",
+      "diameter_inches": "06",
+      "product_code": "BLKG",
+      "status": "ABN"
+    },
+    "anchor_strike_suspect": {
+      "mmsi": 366953000,
+      "vessel_name": "CG WALNUT",
+      "vessel_type": 90,
+      "distance_to_pipeline_meters": 118.9,
+      "timestamp": "2023-11-17T23:13:13+00:00",
+      "speed_knots": 13.730985915492957
+    }
+  },
+  "scoring_weights_applied": {
+    "proximity": 0.3,
+    "time": 0.3,
+    "vessel_type": 0.15,
+    "alignment": 0.15,
+    "ais_gap": 0.1
+  },
+  "ranked_vessel_candidates": [
+    {
+      "rank": 1,
+      "mmsi": 366953000,
+      "vessel_name": "CG WALNUT",
+      "vessel_type": 90,
+      "is_dark_ship": false,
+      "composite_suspicion_score": 52.5,
+      "suspicion_level": "MEDIUM",
+      "cpa": {
+        "distance_meters": 8451.2,
+        "timestamp_utc": "2023-11-17T23:18:55+00:00",
+        "speed_knots": 13.3,
+        "course_deg": 252.6
+      },
+      "sub_scores": {
+        "proximity": 19.9,
+        "time_window": 100.0,
+        "vessel_type_risk": 40.0,
+        "slick_alignment": 70.2,
+        "ais_transponder_gap": 0.0
+      },
+      "audit_rationale": "Active AIS transit passing within 8451m of origin; Passed inside estimated release window (0.1h from center); Vessel profile: Type 90. Composite suspicion: 52.5%."
+    },
+    {
+      "rank": 2,
+      "mmsi": 367332840,
+      "vessel_name": "KARLA F",
+      "vessel_type": 90,
+      "is_dark_ship": false,
+      "composite_suspicion_score": 51.7,
+      "suspicion_level": "MEDIUM",
+      "cpa": {
+        "distance_meters": 10914.4,
+        "timestamp_utc": "2023-11-17T23:44:30+00:00",
+        "speed_knots": 9.8,
+        "course_deg": 42.2
+      },
+      "sub_scores": {
+        "proximity": 10.8,
+        "time_window": 91.8,
+        "vessel_type_risk": 40.0,
+        "slick_alignment": 99.4,
+        "ais_transponder_gap": 0.0
+      },
+      "audit_rationale": "Active AIS transit passing within 10914m of origin; Passed 0.3h outside estimated release window; Vessel profile: Type 90; Course aligned parallel with slick trail (0.6\u00b0 diff). Composite suspicion: 51.7%."
+    },
+    {
+      "rank": 3,
+      "mmsi": 367376530,
+      "vessel_name": "MATTERHORN TLP",
+      "vessel_type": 90,
+      "is_dark_ship": false,
+      "composite_suspicion_score": 50.3,
+      "suspicion_level": "MEDIUM",
+      "cpa": {
+        "distance_meters": 25472.7,
+        "timestamp_utc": "2023-11-17T23:30:19+00:00",
+        "speed_knots": 0.1,
+        "course_deg": 227.7
+      },
+      "sub_scores": {
+        "proximity": 0.3,
+        "time_window": 100.0,
+        "vessel_type_risk": 40.0,
+        "slick_alignment": 95.1,
+        "ais_transponder_gap": 0.0
+      },
+      "audit_rationale": "Active AIS transit passing within 25473m of origin; Passed inside estimated release window (0.1h from center); Vessel profile: Type 90; Course aligned parallel with slick trail (4.9\u00b0 diff). Composite suspicion: 50.3%."
+    },
+    {
+      "rank": 4,
+      "mmsi": 367154130,
+      "vessel_name": "MR SEAMAN",
+      "vessel_type": 60,
+      "is_dark_ship": false,
+      "composite_suspicion_score": 47.5,
+      "suspicion_level": "LOW",
+      "cpa": {
+        "distance_meters": 10723.0,
+        "timestamp_utc": "2023-11-17T23:40:24+00:00",
+        "speed_knots": 1.9,
+        "course_deg": 237.5
+      },
+      "sub_scores": {
+        "proximity": 11.3,
+        "time_window": 94.4,
+        "vessel_type_risk": 20.0,
+        "slick_alignment": 85.3,
+        "ais_transponder_gap": 0.0
+      },
+      "audit_rationale": "Active AIS transit passing within 10723m of origin; Passed 0.3h outside estimated release window; Vessel profile: Type 60; Course aligned parallel with slick trail (14.7\u00b0 diff). Composite suspicion: 47.5%."
+    },
+    {
+      "rank": 5,
+      "mmsi": 338444731,
+      "vessel_name": "FULL CIRCLE II",
+      "vessel_type": 37,
+      "is_dark_ship": false,
+      "composite_suspicion_score": 43.7,
+      "suspicion_level": "LOW",
+      "cpa": {
+        "distance_meters": 31965.3,
+        "timestamp_utc": "2023-11-17T22:59:59+00:00",
+        "speed_knots": 15.2,
+        "course_deg": 225.6
+      },
+      "sub_scores": {
+        "proximity": 0.1,
+        "time_window": 89.6,
+        "vessel_type_risk": 15.0,
+        "slick_alignment": 97.2,
+        "ais_transponder_gap": 0.0
+      },
+      "audit_rationale": "Active AIS transit passing within 31965m of origin; Passed 0.4h outside estimated release window; Vessel profile: Type 37; Course aligned parallel with slick trail (2.8\u00b0 diff). Composite suspicion: 43.7%."
+    },
+    {
+      "rank": 6,
+      "mmsi": 368269780,
+      "vessel_name": "GO GLORY",
+      "vessel_type": 70,
+      "is_dark_ship": false,
+      "composite_suspicion_score": 43.1,
+      "suspicion_level": "LOW",
+      "cpa": {
+        "distance_meters": 14242.8,
+        "timestamp_utc": "2023-11-17T23:02:25+00:00",
+        "speed_knots": 0.1,
+        "course_deg": 292.1
+      },
+      "sub_scores": {
+        "proximity": 4.7,
+        "time_window": 91.0,
+        "vessel_type_risk": 65.0,
+        "slick_alignment": 30.7,
+        "ais_transponder_gap": 0.0
+      },
+      "audit_rationale": "Active AIS transit passing within 14243m of origin; Passed 0.4h outside estimated release window; Vessel profile: Cargo. Composite suspicion: 43.1%."
+    },
+    {
+      "rank": 7,
+      "mmsi": 367594140,
+      "vessel_name": "NGUYEN T J",
+      "vessel_type": 30,
+      "is_dark_ship": false,
+      "composite_suspicion_score": 42.7,
+      "suspicion_level": "LOW",
+      "cpa": {
+        "distance_meters": 14975.5,
+        "timestamp_utc": "2023-11-17T23:58:45+00:00",
+        "speed_knots": 7.6,
+        "course_deg": 217.2
+      },
+      "sub_scores": {
+        "proximity": 3.9,
+        "time_window": 83.7,
+        "vessel_type_risk": 15.0,
+        "slick_alignment": 94.4,
+        "ais_transponder_gap": 0.0
+      },
+      "audit_rationale": "Active AIS transit passing within 14976m of origin; Passed 0.6h outside estimated release window; Vessel profile: Type 30; Course aligned parallel with slick trail (5.6\u00b0 diff). Composite suspicion: 42.7%."
+    },
+    {
+      "rank": 8,
+      "mmsi": 367724890,
+      "vessel_name": "MISSISSIPPI III",
+      "vessel_type": 30,
+      "is_dark_ship": false,
+      "composite_suspicion_score": 41.0,
+      "suspicion_level": "LOW",
+      "cpa": {
+        "distance_meters": 16703.7,
+        "timestamp_utc": "2023-11-17T23:17:50+00:00",
+        "speed_knots": 7.6,
+        "course_deg": 356.0
+      },
+      "sub_scores": {
+        "proximity": 2.5,
+        "time_window": 100.0,
+        "vessel_type_risk": 15.0,
+        "slick_alignment": 53.2,
+        "ais_transponder_gap": 0.0
+      },
+      "audit_rationale": "Active AIS transit passing within 16704m of origin; Passed inside estimated release window (0.1h from center); Vessel profile: Type 30. Composite suspicion: 41.0%."
+    },
+    {
+      "rank": 9,
+      "mmsi": 367558730,
+      "vessel_name": "BRETON ISLAND",
+      "vessel_type": 90,
+      "is_dark_ship": false,
+      "composite_suspicion_score": 39.9,
+      "suspicion_level": "LOW",
+      "cpa": {
+        "distance_meters": 13754.4,
+        "timestamp_utc": "2023-11-17T22:17:14+00:00",
+        "speed_knots": 2.5,
+        "course_deg": 204.0
+      },
+      "sub_scores": {
+        "proximity": 5.3,
+        "time_window": 67.2,
+        "vessel_type_risk": 40.0,
+        "slick_alignment": 81.2,
+        "ais_transponder_gap": 0.0
+      },
+      "audit_rationale": "Active AIS transit passing within 13754m of origin; Passed 1.1h outside estimated release window; Vessel profile: Type 90. Composite suspicion: 39.9%."
+    },
+    {
+      "rank": 10,
+      "mmsi": 338176375,
+      "vessel_name": "BOOGIE",
+      "vessel_type": 37,
+      "is_dark_ship": false,
+      "composite_suspicion_score": 39.8,
+      "suspicion_level": "LOW",
+      "cpa": {
+        "distance_meters": 33202.0,
+        "timestamp_utc": "2023-11-17T22:58:06+00:00",
+        "speed_knots": 28.5,
+        "course_deg": 69.0
+      },
+      "sub_scores": {
+        "proximity": 0.0,
+        "time_window": 88.2,
+        "vessel_type_risk": 15.0,
+        "slick_alignment": 73.8,
+        "ais_transponder_gap": 0.0
+      },
+      "audit_rationale": "Active AIS transit passing within 33202m of origin; Passed 0.4h outside estimated release window; Vessel profile: Type 37. Composite suspicion: 39.8%."
+    },
+    {
+      "rank": 11,
+      "mmsi": 368152930,
+      "vessel_name": "KIMBERLY CELESTE",
+      "vessel_type": 30,
+      "is_dark_ship": false,
+      "composite_suspicion_score": 38.6,
+      "suspicion_level": "LOW",
+      "cpa": {
+        "distance_meters": 14212.3,
+        "timestamp_utc": "2023-11-17T22:17:19+00:00",
+        "speed_knots": 6.0,
+        "course_deg": 41.5
+      },
+      "sub_scores": {
+        "proximity": 4.7,
+        "time_window": 67.2,
+        "vessel_type_risk": 15.0,
+        "slick_alignment": 98.7,
+        "ais_transponder_gap": 0.0
+      },
+      "audit_rationale": "Active AIS transit passing within 14212m of origin; Passed 1.1h outside estimated release window; Vessel profile: Type 30; Course aligned parallel with slick trail (1.3\u00b0 diff). Composite suspicion: 38.6%."
+    },
+    {
+      "rank": 12,
+      "mmsi": 366701330,
+      "vessel_name": "JAMAL",
+      "vessel_type": 37,
+      "is_dark_ship": false,
+      "composite_suspicion_score": 37.6,
+      "suspicion_level": "LOW",
+      "cpa": {
+        "distance_meters": 33730.6,
+        "timestamp_utc": "2023-11-17T22:59:38+00:00",
+        "speed_knots": 0.1,
+        "course_deg": 360.0
+      },
+      "sub_scores": {
+        "proximity": 0.0,
+        "time_window": 89.2,
+        "vessel_type_risk": 15.0,
+        "slick_alignment": 57.2,
+        "ais_transponder_gap": 0.0
+      },
+      "audit_rationale": "Active AIS transit passing within 33731m of origin; Passed 0.4h outside estimated release window; Vessel profile: Type 37. Composite suspicion: 37.6%."
+    },
+    {
+      "rank": 13,
+      "mmsi": 368238290,
+      "vessel_name": "A.B. CENAC",
+      "vessel_type": 0,
+      "is_dark_ship": false,
+      "composite_suspicion_score": 36.1,
+      "suspicion_level": "LOW",
+      "cpa": {
+        "distance_meters": 24372.3,
+        "timestamp_utc": "2023-11-17T22:17:41+00:00",
+        "speed_knots": 1.4,
+        "course_deg": 22.7
+      },
+      "sub_scores": {
+        "proximity": 0.4,
+        "time_window": 67.4,
+        "vessel_type_risk": 25.0,
+        "slick_alignment": 79.9,
+        "ais_transponder_gap": 0.0
+      },
+      "audit_rationale": "Active AIS transit passing within 24372m of origin; Passed 1.1h outside estimated release window; Vessel profile: Type 0. Composite suspicion: 36.1%."
+    },
+    {
+      "rank": 14,
+      "mmsi": 367155810,
+      "vessel_name": "OUR MOTHER",
+      "vessel_type": 30,
+      "is_dark_ship": false,
+      "composite_suspicion_score": 35.6,
+      "suspicion_level": "LOW",
+      "cpa": {
+        "distance_meters": 28566.4,
+        "timestamp_utc": "2023-11-17T23:32:49+00:00",
+        "speed_knots": 2.8,
+        "course_deg": 146.1
+      },
+      "sub_scores": {
+        "proximity": 0.1,
+        "time_window": 99.4,
+        "vessel_type_risk": 15.0,
+        "slick_alignment": 23.3,
+        "ais_transponder_gap": 0.0
+      },
+      "audit_rationale": "Active AIS transit passing within 28566m of origin; Passed 0.1h outside estimated release window; Vessel profile: Type 30. Composite suspicion: 35.6%."
+    },
+    {
+      "rank": 15,
+      "mmsi": 368132210,
+      "vessel_name": "ENTERPRISE",
+      "vessel_type": 37,
+      "is_dark_ship": false,
+      "composite_suspicion_score": 31.1,
+      "suspicion_level": "LOW",
+      "cpa": {
+        "distance_meters": 33729.0,
+        "timestamp_utc": "2023-11-17T22:17:54+00:00",
+        "speed_knots": 0.0,
+        "course_deg": 360.0
+      },
+      "sub_scores": {
+        "proximity": 0.0,
+        "time_window": 67.4,
+        "vessel_type_risk": 15.0,
+        "slick_alignment": 57.2,
+        "ais_transponder_gap": 0.0
+      },
+      "audit_rationale": "Active AIS transit passing within 33729m of origin; Passed 1.1h outside estimated release window; Vessel profile: Type 37. Composite suspicion: 31.1%."
+    }
+  ]
+}

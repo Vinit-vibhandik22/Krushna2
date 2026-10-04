@@ -1,0 +1,41 @@
+{
+  "status": "success",
+  "warning": null,
+  "detection_metadata": {
+    "timestamp": "2023-11-17T23:54:16+00:00",
+    "centroid": {
+      "latitude": 28.93471414451051,
+      "longitude": -88.96548069368853
+    },
+    "has_polygon": true
+  },
+  "morphology_analysis": {
+    "length_km": 2.6701470014094237,
+    "head_width_m": 1780.0980009396158,
+    "tail_width_m": 2136.117601127539,
+    "orientation_deg": 42.83049941698009,
+    "horizontal_diffusivity_m2s": 10.0,
+    "calculated_elapsed_hours": 0.5
+  },
+  "estimated_origin": {
+    "time_window_utc": {
+      "start": "2023-11-17T23:16:46+00:00",
+      "end": "2023-11-17T23:24:16+00:00",
+      "hours_prior_min": 0.5,
+      "hours_prior_max": 0.625,
+      "confidence": "high (morphology-diffusion constrained)"
+    },
+    "primary_centroid": {
+      "latitude": 28.93536949157715,
+      "longitude": -88.96780395507812
+    },
+    "solver_method": "morphology_diffusion_correlated",
+    "confidence": "high"
+  },
+  "simulation_summary": {
+    "total_steps": 7,
+    "total_hours_backtracked": 6,
+    "start_time": "2023-11-17T23:54:16Z",
+    "end_time": "2023-11-17T17:54:16Z"
+  }
+}

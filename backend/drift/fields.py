@@ -1,0 +1,126 @@
+"""Spatio-temporal interpolation of met-ocean forcing fields.
+
+MetProvider holds hourly grids [ny, nx, T]. This module converts a
+(lat, lon, epoch_s) query into (u, v) wind and current vectors via bilinear
+spatial + linear temporal interpolation.
+"""
+from __future__ import annotations
+
+import logging
+import math
+
+import numpy as np
+
+_log = logging.getLogger("fields")
+
+
+class FieldSet:
+    def __init__(self, met):
+        if met.times is None:
+            raise RuntimeError("met fields not refreshed yet")
+        self.lons = met.grid_lons
+        self.lats = met.grid_lats
+        self.times = met.times.astype(np.float64)
+        self.wind_u, self.wind_v = met.wind_u, met.wind_v
+        self.cur_u, self.cur_v = met.cur_u, met.cur_v
+
+    # -- helpers ---------------------------------------------------------------
+    def _ix(self, x: float) -> tuple[int, float]:
+        i = np.searchsorted(self.lons, x) - 1
+        i = int(np.clip(i, 0, len(self.lons) - 2))
+        f = (x - self.lons[i]) / (self.lons[i + 1] - self.lons[i])
+        return i, min(max(f, 0.0), 1.0)
+
+    def _iy(self, y: float) -> tuple[int, float]:
+        j = np.searchsorted(self.lats, y) - 1
+        j = int(np.clip(j, 0, len(self.lats) - 2))
+        f = (y - self.lats[j]) / (self.lats[j + 1] - self.lats[j])
+        return j, min(max(f, 0.0), 1.0)
+
+    def _it(self, t: float) -> tuple[int, float]:
+        k = np.searchsorted(self.times, t) - 1
+        if k < 0:
+            self._warn_clamp(t)
+            return 0, 0.0
+        if k >= len(self.times) - 1:
+            self._warn_clamp(t)
+            return len(self.times) - 2, 1.0
+        f = (t - self.times[k]) / (self.times[k + 1] - self.times[k])
+        return int(k), min(max(f, 0.0), 1.0)
+
+    def _warn_clamp(self, t: float) -> None:
+        """Surface when a requested epoch falls outside the loaded field window
+        (the solver silently freezes/stretches edge forcing otherwise)."""
+        if getattr(self, "_warned_ts", None) is None:
+            self._warned_ts = (t, self.times[0], self.times[-1])
+            _log.warning(
+                "drift time %.1f outside met window [%.1f, %.1f] - "
+                "using clamped edge forcing", t, self.times[0], self.times[-1])
+
+    @staticmethod
+    def _bilinear(field: np.ndarray, iy, fy, ix, fx, it, ft) -> float:
+        c00 = field[iy, ix, it] * (1 - fx) + field[iy, ix + 1, it] * fx
+        c10 = field[iy + 1, ix, it] * (1 - fx) + field[iy + 1, ix + 1, it] * fx
+        c0 = c00 * (1 - fy) + c10 * fy
+        c01 = field[iy, ix, it + 1] * (1 - fx) + field[iy, ix + 1, it + 1] * fx
+        c11 = field[iy + 1, ix, it + 1] * (1 - fx) + field[iy + 1, ix + 1, it + 1] * fx
+        c1 = c01 * (1 - fy) + c11 * fy
+        return float(c0 * (1 - ft) + c1 * ft)
+
+    def sample(self, lat: float, lon: float, t: float) -> dict:
+        """Returns {'wind': (u,v), 'current': (u,v)} in m/s at time t (epoch s)."""
+        ix, fx = self._ix(lon)
+        iy, fy = self._iy(lat)
+        it, ft = self._it(t)
+        nan = math.isnan
+        wu = self._bilinear(self.wind_u, iy, fy, ix, fx, it, ft)
+        wv = self._bilinear(self.wind_v, iy, fy, ix, fx, it, ft)
+        cu = self._bilinear(self.cur_u, iy, fy, ix, fx, it, ft)
+        cv = self._bilinear(self.cur_v, iy, fy, ix, fx, it, ft)
+        return {
+            "wind": (0.0 if nan(wu) else wu, 0.0 if nan(wv) else wv),
+            "current": (0.0 if nan(cu) else cu, 0.0 if nan(cv) else cv),
+        }
+
+    def sample_batch(self, lats: np.ndarray, lons: np.ndarray, t: float) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Vectorized sampling for arrays of lats and lons at epoch time t.
+
+        Returns (cur_u, cur_v, wind_u, wind_v) as 1D arrays of length N.
+        """
+        k = np.searchsorted(self.times, t) - 1
+        if k < 0:
+            self._warn_clamp(t)
+            it, ft = 0, 0.0
+        elif k >= len(self.times) - 1:
+            self._warn_clamp(t)
+            it, ft = len(self.times) - 2, 1.0
+        else:
+            it = int(k)
+            ft = min(max((t - self.times[it]) / (self.times[it + 1] - self.times[it]), 0.0), 1.0)
+
+        ix = np.searchsorted(self.lons, lons) - 1
+        ix = np.clip(ix, 0, len(self.lons) - 2)
+        fx = np.clip((lons - self.lons[ix]) / (self.lons[ix + 1] - self.lons[ix]), 0.0, 1.0)
+
+        iy = np.searchsorted(self.lats, lats) - 1
+        iy = np.clip(iy, 0, len(self.lats) - 2)
+        fy = np.clip((lats - self.lats[iy]) / (self.lats[iy + 1] - self.lats[iy]), 0.0, 1.0)
+
+        def _bilinear_vec(field: np.ndarray) -> np.ndarray:
+            c00 = field[iy, ix, it] * (1.0 - fx) + field[iy, ix + 1, it] * fx
+            c10 = field[iy + 1, ix, it] * (1.0 - fx) + field[iy + 1, ix + 1, it] * fx
+            c0 = c00 * (1.0 - fy) + c10 * fy
+            c01 = field[iy, ix, it + 1] * (1.0 - fx) + field[iy, ix + 1, it + 1] * fx
+            c11 = field[iy + 1, ix, it + 1] * (1.0 - fx) + field[iy + 1, ix + 1, it + 1] * fx
+            c1 = c01 * (1.0 - fy) + c11 * fy
+            res = c0 * (1.0 - ft) + c1 * ft
+            return np.nan_to_num(res, nan=0.0)
+
+        wu = _bilinear_vec(self.wind_u)
+        wv = _bilinear_vec(self.wind_v)
+        cu = _bilinear_vec(self.cur_u)
+        cv = _bilinear_vec(self.cur_v)
+        return cu, cv, wu, wv
+
+    def covers(self, t0: float, t1: float) -> bool:
+        return self.times[0] <= t0 <= t1 <= self.times[-1]

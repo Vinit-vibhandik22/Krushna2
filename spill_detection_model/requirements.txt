@@ -1,0 +1,8 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+streamlit
+segmentation-models-pytorch
+opencv-python-headless
+geojson
+pillow
+gdown

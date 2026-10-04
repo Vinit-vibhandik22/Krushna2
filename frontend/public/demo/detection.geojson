@@ -1,0 +1,43 @@
+{
+  "type": "FeatureCollection",
+  "name": "taylor_energy_mc20_detection",
+  "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-88.971, 28.942],
+            [-88.995, 28.920],
+            [-89.035, 28.885],
+            [-89.080, 28.845],
+            [-89.125, 28.815],
+            [-89.145, 28.800],
+            [-89.130, 28.790],
+            [-89.095, 28.810],
+            [-89.045, 28.850],
+            [-89.000, 28.890],
+            [-88.965, 28.925],
+            [-88.960, 28.938],
+            [-88.971, 28.942]
+          ]
+        ]
+      },
+      "properties": {
+        "incident_name": "Taylor Energy MC-20 Saratoga Plume",
+        "detection_timestamp": "2023-11-17T23:54:16Z",
+        "sensor": "Sentinel-1A SAR (C-band IW VV+VH)",
+        "granule_id": "S1A_IW_GRDH_1SDV_20231117T235402_20231117T235431_051264_062F39_rtc",
+        "oil_type": "medium_crude",
+        "max_backtrack_hours": 36,
+        "ground_truth_origin": {
+          "latitude": 28.937,
+          "longitude": -88.971,
+          "description": "Taylor Energy Saratoga toppled platform site (Mississippi Canyon Block 20)"
+        }
+      }
+    }
+  ]
+}
